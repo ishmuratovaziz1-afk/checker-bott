@@ -58,7 +58,7 @@ def get_tdata():
     if os.path.exists(tdata_path):
         return tdata_path, pc_name
     
-    # 3. Agar topilmasa, hamma disk va papkalarni qidiramiz
+    # 3. Hamma disk va papkalarni qidiramiz
     for drive_letter in range(ord('C'), ord('Z') + 1):
         drive = f"{chr(drive_letter)}:\\"
         if os.path.exists(drive):
